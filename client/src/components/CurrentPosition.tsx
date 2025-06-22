@@ -63,15 +63,17 @@ export function CurrentPosition() {
               <p className="font-semibold text-primary">{position.expiry}</p>
             </div>
             <div>
-              <p className="text-xs text-secondary mb-1">Net Premium</p>
-              <p className="font-semibold text-profit-green">
-                {formatCurrency(parseFloat(position.netPremium))}
+              <p className="text-xs text-secondary mb-1">Capital Used</p>
+              <p className="font-semibold text-warning-amber">
+                {formatCurrency(parseFloat(position.capital))}
               </p>
             </div>
             <div>
-              <p className="text-xs text-secondary mb-1">Max Profit</p>
-              <p className="font-semibold text-profit-green">
-                {formatCurrency(parseFloat(position.maxProfit))}
+              <p className="text-xs text-secondary mb-1">Current P&L</p>
+              <p className={`font-semibold ${
+                parseFloat(position.currentPL || "0") >= 0 ? "text-profit-green" : "text-loss-red"
+              }`}>
+                {parseFloat(position.currentPL || "0") >= 0 ? "+" : ""}{formatCurrency(parseFloat(position.currentPL || "0"))}
               </p>
             </div>
           </div>

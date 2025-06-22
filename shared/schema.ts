@@ -10,11 +10,26 @@ export const ironCondorPositions = pgTable("iron_condor_positions", {
   putSellStrike: integer("put_sell_strike").notNull(),
   callSellStrike: integer("call_sell_strike").notNull(),
   callBuyStrike: integer("call_buy_strike").notNull(),
+  putBuyPrice: decimal("put_buy_price", { precision: 10, scale: 2 }).notNull(),
+  putSellPrice: decimal("put_sell_price", { precision: 10, scale: 2 }).notNull(),
+  callSellPrice: decimal("call_sell_price", { precision: 10, scale: 2 }).notNull(),
+  callBuyPrice: decimal("call_buy_price", { precision: 10, scale: 2 }).notNull(),
   netPremium: decimal("net_premium", { precision: 10, scale: 2 }).notNull(),
   maxProfit: decimal("max_profit", { precision: 10, scale: 2 }).notNull(),
   maxLoss: decimal("max_loss", { precision: 10, scale: 2 }).notNull(),
+  capital: decimal("capital", { precision: 12, scale: 2 }).notNull(),
+  quantity: integer("quantity").notNull().default(1),
+  currentPL: decimal("current_pl", { precision: 10, scale: 2 }).default("0.00"),
   status: text("status").notNull().default("ACTIVE"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const userCapital = pgTable("user_capital", {
+  id: serial("id").primaryKey(),
+  totalCapital: decimal("total_capital", { precision: 12, scale: 2 }).notNull(),
+  availableCapital: decimal("available_capital", { precision: 12, scale: 2 }).notNull(),
+  usedCapital: decimal("used_capital", { precision: 12, scale: 2 }).notNull().default("0.00"),
+  lastUpdated: timestamp("last_updated").defaultNow().notNull(),
 });
 
 export const optionsChain = pgTable("options_chain", {
@@ -67,6 +82,7 @@ export const marketData = pgTable("market_data", {
 export const insertIronCondorSchema = createInsertSchema(ironCondorPositions).omit({
   id: true,
   createdAt: true,
+  currentPL: true,
 });
 
 export const insertOptionsChainSchema = createInsertSchema(optionsChain).omit({
@@ -89,6 +105,11 @@ export const insertMarketDataSchema = createInsertSchema(marketData).omit({
   lastUpdated: true,
 });
 
+export const insertUserCapitalSchema = createInsertSchema(userCapital).omit({
+  id: true,
+  lastUpdated: true,
+});
+
 export type IronCondorPosition = typeof ironCondorPositions.$inferSelect;
 export type InsertIronCondorPosition = z.infer<typeof insertIronCondorSchema>;
 
@@ -103,6 +124,9 @@ export type InsertSmartSuggestion = z.infer<typeof insertSmartSuggestionSchema>;
 
 export type MarketData = typeof marketData.$inferSelect;
 export type InsertMarketData = z.infer<typeof insertMarketDataSchema>;
+
+export type UserCapital = typeof userCapital.$inferSelect;
+export type InsertUserCapital = z.infer<typeof insertUserCapitalSchema>;
 
 // Additional types for frontend
 export interface CandleData {

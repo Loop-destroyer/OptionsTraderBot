@@ -103,10 +103,19 @@ The database uses PostgreSQL with Drizzle ORM for type-safe database operations.
 - **DATABASE_URL**: PostgreSQL connection string
 - **NSE_API_KEY**: Optional NSE data service authentication
 
+## Recent Changes
+
+- **June 22, 2025**: Enhanced capital management system
+  - Added UserCapital schema with total/available/used capital tracking
+  - Created CapitalManagement component with add/withdraw functionality
+  - Built CustomStrategyForm for user-defined iron condor parameters
+  - Integrated real-time P&L calculation with capital allocation
+  - Added APK build instructions for Android deployment
+
 ## Changelog
 
-Changelog:
-- June 22, 2025. Initial setup
+- June 22, 2025: Initial setup
+- June 22, 2025: Added capital management and custom strategy features
 
 ## User Preferences
 

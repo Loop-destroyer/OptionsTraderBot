@@ -3,7 +3,7 @@ import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { nseApiService } from "./services/nseApi";
 import { ironCondorEngine } from "./services/ironCondorEngine";
-import { insertIronCondorSchema, insertTradingSignalSchema, insertSmartSuggestionSchema } from "@shared/schema";
+import { insertIronCondorSchema, insertTradingSignalSchema, insertSmartSuggestionSchema, insertUserCapitalSchema } from "@shared/schema";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Iron Condor Position Routes
@@ -213,6 +213,41 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(metrics);
     } catch (error) {
       res.status(500).json({ message: "Failed to calculate iron condor metrics" });
+    }
+  });
+
+  // User Capital Routes
+  app.get("/api/user-capital", async (req, res) => {
+    try {
+      const capital = await storage.getUserCapital();
+      res.json(capital);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch user capital" });
+    }
+  });
+
+  app.post("/api/user-capital", async (req, res) => {
+    try {
+      const validatedData = insertUserCapitalSchema.parse(req.body);
+      const capital = await storage.updateUserCapital(validatedData);
+      res.json(capital);
+    } catch (error) {
+      res.status(400).json({ message: "Invalid capital data" });
+    }
+  });
+
+  // Update Iron Condor P&L
+  app.patch("/api/iron-condor/:id/pl", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const { currentPL } = req.body;
+      const position = await storage.updateIronCondorPL(id, parseFloat(currentPL));
+      if (!position) {
+        return res.status(404).json({ message: "Iron condor position not found" });
+      }
+      res.json(position);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to update iron condor P&L" });
     }
   });
 

@@ -4,6 +4,7 @@ import {
   tradingSignals, 
   smartSuggestions, 
   marketData,
+  userCapital,
   type IronCondorPosition, 
   type InsertIronCondorPosition,
   type OptionsChainData,
@@ -13,7 +14,9 @@ import {
   type SmartSuggestion,
   type InsertSmartSuggestion,
   type MarketData,
-  type InsertMarketData
+  type InsertMarketData,
+  type UserCapital,
+  type InsertUserCapital
 } from "@shared/schema";
 
 export interface IStorage {
@@ -21,6 +24,7 @@ export interface IStorage {
   getActiveIronCondor(): Promise<IronCondorPosition | undefined>;
   createIronCondorPosition(position: InsertIronCondorPosition): Promise<IronCondorPosition>;
   updateIronCondorStatus(id: number, status: string): Promise<IronCondorPosition | undefined>;
+  updateIronCondorPL(id: number, currentPL: number): Promise<IronCondorPosition | undefined>;
   
   // Options Chain methods
   getOptionsChain(underlying: string, expiry: string): Promise<OptionsChainData[]>;
@@ -37,6 +41,10 @@ export interface IStorage {
   // Market Data methods
   getMarketData(underlying: string): Promise<MarketData | undefined>;
   updateMarketData(data: InsertMarketData): Promise<MarketData>;
+  
+  // User Capital methods
+  getUserCapital(): Promise<UserCapital | undefined>;
+  updateUserCapital(data: InsertUserCapital): Promise<UserCapital>;
 }
 
 export class MemStorage implements IStorage {
@@ -45,6 +53,7 @@ export class MemStorage implements IStorage {
   private tradingSignals: Map<string, TradingSignal[]>;
   private smartSuggestions: Map<string, SmartSuggestion[]>;
   private marketData: Map<string, MarketData>;
+  private userCapital: UserCapital | undefined;
   private currentId: number;
 
   constructor() {
@@ -53,6 +62,7 @@ export class MemStorage implements IStorage {
     this.tradingSignals = new Map();
     this.smartSuggestions = new Map();
     this.marketData = new Map();
+    this.userCapital = undefined;
     this.currentId = 1;
     
     // Initialize with sample data for NIFTY
@@ -69,9 +79,16 @@ export class MemStorage implements IStorage {
       putSellStrike: 21200,
       callSellStrike: 21800,
       callBuyStrike: 22000,
-      netPremium: "4250.00",
-      maxProfit: "4250.00",
-      maxLoss: "15750.00",
+      putBuyPrice: "45.50",
+      putSellPrice: "125.75",
+      callSellPrice: "85.60",
+      callBuyPrice: "35.75",
+      netPremium: "130.10",
+      maxProfit: "130.10",
+      maxLoss: "69.90",
+      capital: "100000.00",
+      quantity: 50,
+      currentPL: "2150.00",
       status: "ACTIVE",
       createdAt: new Date(),
     };
@@ -88,6 +105,15 @@ export class MemStorage implements IStorage {
       lastUpdated: new Date(),
     };
     this.marketData.set("NIFTY", sampleMarketData);
+
+    // Sample user capital
+    this.userCapital = {
+      id: this.currentId++,
+      totalCapital: "500000.00",
+      availableCapital: "400000.00",
+      usedCapital: "100000.00",
+      lastUpdated: new Date(),
+    };
 
     // Sample options chain data
     const sampleOptionsChain: OptionsChainData[] = [
@@ -109,6 +135,9 @@ export class MemStorage implements IStorage {
     const newPosition: IronCondorPosition = {
       ...position,
       id,
+      status: position.status || "ACTIVE",
+      quantity: position.quantity || 1,
+      currentPL: "0.00",
       createdAt: new Date(),
     };
     this.ironCondorPositions.set(id, newPosition);
@@ -119,6 +148,16 @@ export class MemStorage implements IStorage {
     const position = this.ironCondorPositions.get(id);
     if (position) {
       position.status = status;
+      this.ironCondorPositions.set(id, position);
+      return position;
+    }
+    return undefined;
+  }
+
+  async updateIronCondorPL(id: number, currentPL: number): Promise<IronCondorPosition | undefined> {
+    const position = this.ironCondorPositions.get(id);
+    if (position) {
+      position.currentPL = currentPL.toString();
       this.ironCondorPositions.set(id, position);
       return position;
     }
@@ -137,6 +176,10 @@ export class MemStorage implements IStorage {
       const chainData: OptionsChainData = {
         ...item,
         id,
+        peLtp: item.peLtp || null,
+        ceLtp: item.ceLtp || null,
+        peVolume: item.peVolume || null,
+        ceVolume: item.ceVolume || null,
         lastUpdated: new Date(),
       };
       result.push(chainData);
@@ -206,6 +249,22 @@ export class MemStorage implements IStorage {
     };
     this.marketData.set(data.underlying, newData);
     return newData;
+  }
+
+  async getUserCapital(): Promise<UserCapital | undefined> {
+    return this.userCapital;
+  }
+
+  async updateUserCapital(data: InsertUserCapital): Promise<UserCapital> {
+    const id = this.userCapital?.id || this.currentId++;
+    const newCapital: UserCapital = {
+      ...data,
+      id,
+      usedCapital: data.usedCapital || "0.00",
+      lastUpdated: new Date(),
+    };
+    this.userCapital = newCapital;
+    return newCapital;
   }
 }
 
