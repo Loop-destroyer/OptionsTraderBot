@@ -154,3 +154,47 @@ export interface TrailingStopLoss {
   trailLevelPercent: number;
   status: string;
 }
+
+// Backtesting schemas
+export const backtestResults = pgTable("backtest_results", {
+  id: serial("id").primaryKey(),
+  strategy: text("strategy").notNull(),
+  startDate: timestamp("start_date").notNull(),
+  endDate: timestamp("end_date").notNull(),
+  totalTrades: integer("total_trades").notNull(),
+  winningTrades: integer("winning_trades").notNull(),
+  losingTrades: integer("losing_trades").notNull(),
+  totalPL: decimal("total_pl", { precision: 12, scale: 2 }).notNull(),
+  maxDrawdown: decimal("max_drawdown", { precision: 10, scale: 2 }).notNull(),
+  sharpeRatio: decimal("sharpe_ratio", { precision: 5, scale: 2 }),
+  winRate: decimal("win_rate", { precision: 5, scale: 2 }).notNull(),
+  avgWin: decimal("avg_win", { precision: 10, scale: 2 }).notNull(),
+  avgLoss: decimal("avg_loss", { precision: 10, scale: 2 }).notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const historicalData = pgTable("historical_data", {
+  id: serial("id").primaryKey(),
+  underlying: text("underlying").notNull(),
+  date: timestamp("date").notNull(),
+  open: decimal("open", { precision: 10, scale: 2 }).notNull(),
+  high: decimal("high", { precision: 10, scale: 2 }).notNull(),
+  low: decimal("low", { precision: 10, scale: 2 }).notNull(),
+  close: decimal("close", { precision: 10, scale: 2 }).notNull(),
+  volume: integer("volume").notNull(),
+});
+
+export const insertBacktestResultsSchema = createInsertSchema(backtestResults).omit({
+  id: true,
+  createdAt: true,
+});
+
+export const insertHistoricalDataSchema = createInsertSchema(historicalData).omit({
+  id: true,
+});
+
+export type BacktestResults = typeof backtestResults.$inferSelect;
+export type InsertBacktestResults = z.infer<typeof insertBacktestResultsSchema>;
+
+export type HistoricalData = typeof historicalData.$inferSelect;
+export type InsertHistoricalData = z.infer<typeof insertHistoricalDataSchema>;

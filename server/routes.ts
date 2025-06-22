@@ -251,6 +251,47 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Backtesting Routes
+  app.post("/api/backtest/seed", async (req, res) => {
+    try {
+      await storage.seedHistoricalData();
+      res.json({ message: "Historical data seeded successfully" });
+    } catch (error) {
+      res.status(500).json({ message: "Failed to seed historical data" });
+    }
+  });
+
+  app.post("/api/backtest/run", async (req, res) => {
+    try {
+      const { underlying, startDate, endDate, strategy, initialCapital, riskPerTrade } = req.body;
+      
+      const config = {
+        underlying: underlying || "NIFTY",
+        startDate: new Date(startDate || Date.now() - 90 * 24 * 60 * 60 * 1000), // 3 months ago
+        endDate: new Date(endDate || Date.now()),
+        strategy: strategy || "MODERATE",
+        initialCapital: initialCapital || 500000,
+        riskPerTrade: riskPerTrade || 5,
+      };
+      
+      const results = await storage.runBacktest(config);
+      res.json(results);
+    } catch (error) {
+      console.error("Backtest error:", error);
+      res.status(500).json({ message: "Failed to run backtest" });
+    }
+  });
+
+  app.get("/api/backtest/results", async (req, res) => {
+    try {
+      const { strategy } = req.query;
+      const results = await storage.getBacktestResults(strategy as string);
+      res.json(results);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch backtest results" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }

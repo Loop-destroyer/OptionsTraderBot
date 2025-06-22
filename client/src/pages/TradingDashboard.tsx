@@ -6,6 +6,7 @@ import { OptionsChain } from "@/components/OptionsChain";
 import { ProfitLossVisualization } from "@/components/ProfitLossVisualization";
 import { CapitalManagement } from "@/components/CapitalManagement";
 import { CustomStrategyForm } from "@/components/CustomStrategyForm";
+import { BacktestDashboard } from "@/components/BacktestDashboard";
 import { BottomNavigation } from "@/components/BottomNavigation";
 import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -37,6 +38,12 @@ export default function TradingDashboard() {
         </section>
         
         <OptionsChain />
+        
+        {/* Backtesting Section */}
+        <section className="p-4">
+          <BacktestDashboard />
+        </section>
+        
         <ProfitLossVisualization />
       </main>
 

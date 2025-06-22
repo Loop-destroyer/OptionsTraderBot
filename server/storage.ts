@@ -18,6 +18,8 @@ import {
   type UserCapital,
   type InsertUserCapital
 } from "@shared/schema";
+import { db } from "./db";
+import { eq, sql, and } from "drizzle-orm";
 
 export interface IStorage {
   // Iron Condor Position methods
@@ -45,6 +47,11 @@ export interface IStorage {
   // User Capital methods
   getUserCapital(): Promise<UserCapital | undefined>;
   updateUserCapital(data: InsertUserCapital): Promise<UserCapital>;
+  
+  // Backtesting methods
+  runBacktest(config: any): Promise<any>;
+  getBacktestResults(strategy?: string): Promise<any[]>;
+  seedHistoricalData(): Promise<void>;
 }
 
 export class MemStorage implements IStorage {
@@ -251,6 +258,18 @@ export class MemStorage implements IStorage {
     return newData;
   }
 
+  async runBacktest(config: any): Promise<any> {
+    throw new Error("Backtesting not implemented for MemStorage");
+  }
+
+  async getBacktestResults(strategy?: string): Promise<any[]> {
+    return [];
+  }
+
+  async seedHistoricalData(): Promise<void> {
+    // Mock implementation for MemStorage
+  }
+
   async getUserCapital(): Promise<UserCapital | undefined> {
     return this.userCapital;
   }
@@ -268,4 +287,184 @@ export class MemStorage implements IStorage {
   }
 }
 
-export const storage = new MemStorage();
+// Database Storage Implementation
+export class DatabaseStorage implements IStorage {
+  async getActiveIronCondor(): Promise<IronCondorPosition | undefined> {
+    const [position] = await db.select().from(ironCondorPositions).where(eq(ironCondorPositions.status, "ACTIVE"));
+    return position || undefined;
+  }
+
+  async createIronCondorPosition(position: InsertIronCondorPosition): Promise<IronCondorPosition> {
+    const [newPosition] = await db
+      .insert(ironCondorPositions)
+      .values({
+        ...position,
+        status: position.status || "ACTIVE",
+        quantity: position.quantity || 1,
+        currentPL: "0.00",
+      })
+      .returning();
+    return newPosition;
+  }
+
+  async updateIronCondorStatus(id: number, status: string): Promise<IronCondorPosition | undefined> {
+    const [position] = await db
+      .update(ironCondorPositions)
+      .set({ status })
+      .where(eq(ironCondorPositions.id, id))
+      .returning();
+    return position || undefined;
+  }
+
+  async updateIronCondorPL(id: number, currentPL: number): Promise<IronCondorPosition | undefined> {
+    const [position] = await db
+      .update(ironCondorPositions)
+      .set({ currentPL: currentPL.toString() })
+      .where(eq(ironCondorPositions.id, id))
+      .returning();
+    return position || undefined;
+  }
+
+  async getOptionsChain(underlying: string, expiry: string): Promise<OptionsChainData[]> {
+    return await db.select().from(optionsChain)
+      .where(and(
+        eq(optionsChain.underlying, underlying),
+        eq(optionsChain.expiry, expiry)
+      ));
+  }
+
+  async updateOptionsChain(data: InsertOptionsChainData[]): Promise<OptionsChainData[]> {
+    const result = await db
+      .insert(optionsChain)
+      .values(data.map(item => ({
+        ...item,
+        peLtp: item.peLtp || null,
+        ceLtp: item.ceLtp || null,
+        peVolume: item.peVolume || null,
+        ceVolume: item.ceVolume || null,
+      })))
+      .onConflictDoUpdate({
+        target: [optionsChain.underlying, optionsChain.expiry, optionsChain.strike],
+        set: {
+          peLtp: sql`excluded.pe_ltp`,
+          ceLtp: sql`excluded.ce_ltp`,
+          peVolume: sql`excluded.pe_volume`,
+          ceVolume: sql`excluded.ce_volume`,
+          lastUpdated: sql`NOW()`,
+        },
+      })
+      .returning();
+    return result;
+  }
+
+  async getLatestTradingSignal(underlying: string): Promise<TradingSignal | undefined> {
+    const [signal] = await db.select().from(tradingSignals)
+      .where(eq(tradingSignals.underlying, underlying))
+      .orderBy(sql`${tradingSignals.timestamp} DESC`)
+      .limit(1);
+    return signal || undefined;
+  }
+
+  async createTradingSignal(signal: InsertTradingSignal): Promise<TradingSignal> {
+    const [newSignal] = await db
+      .insert(tradingSignals)
+      .values(signal)
+      .returning();
+    return newSignal;
+  }
+
+  async getSmartSuggestions(underlying: string, strategy?: string): Promise<SmartSuggestion[]> {
+    if (strategy) {
+      return await db.select().from(smartSuggestions)
+        .where(and(
+          eq(smartSuggestions.underlying, underlying),
+          eq(smartSuggestions.strategy, strategy)
+        ))
+        .orderBy(sql`${smartSuggestions.successProbability} DESC`);
+    }
+    
+    return await db.select().from(smartSuggestions)
+      .where(eq(smartSuggestions.underlying, underlying))
+      .orderBy(sql`${smartSuggestions.successProbability} DESC`);
+  }
+
+  async createSmartSuggestion(suggestion: InsertSmartSuggestion): Promise<SmartSuggestion> {
+    const [newSuggestion] = await db
+      .insert(smartSuggestions)
+      .values(suggestion)
+      .returning();
+    return newSuggestion;
+  }
+
+  async getMarketData(underlying: string): Promise<MarketData | undefined> {
+    const [data] = await db.select().from(marketData)
+      .where(eq(marketData.underlying, underlying))
+      .orderBy(sql`${marketData.lastUpdated} DESC`)
+      .limit(1);
+    return data || undefined;
+  }
+
+  async updateMarketData(data: InsertMarketData): Promise<MarketData> {
+    const [newData] = await db
+      .insert(marketData)
+      .values(data)
+      .onConflictDoUpdate({
+        target: [marketData.underlying],
+        set: {
+          spotPrice: sql`excluded.spot_price`,
+          change: sql`excluded.change`,
+          changePercent: sql`excluded.change_percent`,
+          marketStatus: sql`excluded.market_status`,
+          lastUpdated: sql`NOW()`,
+        },
+      })
+      .returning();
+    return newData;
+  }
+
+  async getUserCapital(): Promise<UserCapital | undefined> {
+    const [capital] = await db.select().from(userCapital)
+      .orderBy(sql`${userCapital.lastUpdated} DESC`)
+      .limit(1);
+    return capital || undefined;
+  }
+
+  async updateUserCapital(data: InsertUserCapital): Promise<UserCapital> {
+    const [newCapital] = await db
+      .insert(userCapital)
+      .values({
+        ...data,
+        usedCapital: data.usedCapital || "0.00",
+      })
+      .onConflictDoUpdate({
+        target: [userCapital.id],
+        set: {
+          totalCapital: sql`excluded.total_capital`,
+          availableCapital: sql`excluded.available_capital`,
+          usedCapital: sql`excluded.used_capital`,
+          lastUpdated: sql`NOW()`,
+        },
+      })
+      .returning();
+    return newCapital;
+  }
+
+  async runBacktest(config: any): Promise<any> {
+    const { backtestEngine } = await import("./services/backtestEngine");
+    const results = await backtestEngine.runBacktest(config);
+    await backtestEngine.saveBacktestResults(results);
+    return results;
+  }
+
+  async getBacktestResults(strategy?: string): Promise<any[]> {
+    const { backtestEngine } = await import("./services/backtestEngine");
+    return await backtestEngine.getBacktestResults(strategy);
+  }
+
+  async seedHistoricalData(): Promise<void> {
+    const { backtestEngine } = await import("./services/backtestEngine");
+    await backtestEngine.seedHistoricalData();
+  }
+}
+
+export const storage = new DatabaseStorage();

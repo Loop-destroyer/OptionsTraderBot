@@ -112,6 +112,13 @@ The database uses PostgreSQL with Drizzle ORM for type-safe database operations.
   - Integrated real-time P&L calculation with capital allocation
   - Added APK build instructions for Android deployment
 
+- **June 22, 2025**: Added database and backtesting functionality
+  - Migrated from in-memory storage to PostgreSQL database using Drizzle ORM
+  - Created comprehensive backtesting engine with historical data simulation
+  - Added BacktestDashboard component for strategy performance analysis
+  - Implemented realistic NSE data modeling for 6-month historical periods
+  - Built comprehensive backtest metrics including Sharpe ratio, win rate, drawdown analysis
+
 ## Changelog
 
 - June 22, 2025: Initial setup
