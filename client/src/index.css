@@ -1,0 +1,147 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --background: hsl(0, 0%, 10%);
+  --foreground: hsl(0, 0%, 98%);
+  --muted: hsl(0, 0%, 17%);
+  --muted-foreground: hsl(0, 0%, 69%);
+  --popover: hsl(0, 0%, 17%);
+  --popover-foreground: hsl(0, 0%, 98%);
+  --card: hsl(0, 0%, 17%);
+  --card-foreground: hsl(0, 0%, 98%);
+  --border: hsl(0, 0%, 26%);
+  --input: hsl(0, 0%, 26%);
+  --primary: hsl(130, 100%, 45%);
+  --primary-foreground: hsl(0, 0%, 10%);
+  --secondary: hsl(0, 0%, 17%);
+  --secondary-foreground: hsl(0, 0%, 98%);
+  --accent: hsl(0, 0%, 17%);
+  --accent-foreground: hsl(0, 0%, 98%);
+  --destructive: hsl(0, 84%, 54%);
+  --destructive-foreground: hsl(0, 0%, 98%);
+  --ring: hsl(0, 0%, 26%);
+  --radius: 0.5rem;
+  
+  /* Trading specific colors */
+  --trading-bg: hsl(0, 0%, 10%);
+  --trading-card: hsl(0, 0%, 17%);
+  --trading-border: hsl(0, 0%, 26%);
+  --profit-green: hsl(130, 100%, 45%);
+  --loss-red: hsl(0, 84%, 54%);
+  --warning-amber: hsl(45, 100%, 57%);
+  --text-primary: hsl(0, 0%, 98%);
+  --text-secondary: hsl(0, 0%, 69%);
+}
+
+.dark {
+  --background: hsl(0, 0%, 10%);
+  --foreground: hsl(0, 0%, 98%);
+  --muted: hsl(0, 0%, 17%);
+  --muted-foreground: hsl(0, 0%, 69%);
+  --popover: hsl(0, 0%, 17%);
+  --popover-foreground: hsl(0, 0%, 98%);
+  --card: hsl(0, 0%, 17%);
+  --card-foreground: hsl(0, 0%, 98%);
+  --border: hsl(0, 0%, 26%);
+  --input: hsl(0, 0%, 26%);
+  --primary: hsl(130, 100%, 45%);
+  --primary-foreground: hsl(0, 0%, 10%);
+  --secondary: hsl(0, 0%, 17%);
+  --secondary-foreground: hsl(0, 0%, 98%);
+  --accent: hsl(0, 0%, 17%);
+  --accent-foreground: hsl(0, 0%, 98%);
+  --destructive: hsl(0, 84%, 54%);
+  --destructive-foreground: hsl(0, 0%, 98%);
+  --ring: hsl(0, 0%, 26%);
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply font-sans antialiased bg-background text-foreground;
+    background-color: var(--trading-bg);
+    color: var(--text-primary);
+    font-family: 'Roboto', sans-serif;
+  }
+}
+
+@layer utilities {
+  .trading-bg {
+    background-color: var(--trading-bg);
+  }
+  
+  .trading-card {
+    background-color: var(--trading-card);
+  }
+  
+  .trading-border {
+    border-color: var(--trading-border);
+  }
+  
+  .profit-green {
+    color: var(--profit-green);
+  }
+  
+  .loss-red {
+    color: var(--loss-red);
+  }
+  
+  .warning-amber {
+    color: var(--warning-amber);
+  }
+  
+  .text-primary {
+    color: var(--text-primary);
+  }
+  
+  .text-secondary {
+    color: var(--text-secondary);
+  }
+  
+  .bg-profit-green {
+    background-color: var(--profit-green);
+  }
+  
+  .bg-loss-red {
+    background-color: var(--loss-red);
+  }
+  
+  .bg-warning-amber {
+    background-color: var(--warning-amber);
+  }
+  
+  .border-profit-green {
+    border-color: var(--profit-green);
+  }
+  
+  .border-loss-red {
+    border-color: var(--loss-red);
+  }
+  
+  .border-warning-amber {
+    border-color: var(--warning-amber);
+  }
+}
+
+/* Custom scrollbar for dark theme */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--trading-card);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--trading-border);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--text-secondary);
+}
