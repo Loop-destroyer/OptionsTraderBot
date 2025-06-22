@@ -19,38 +19,85 @@ export class IronCondorEngine {
         throw new Error("Insufficient candle data for analysis");
       }
 
-      // Calculate percentage changes for each candle
+      // Get the 3rd candle (index 2) - this defines our limits
+      const thirdCandle = candleData[2];
+      const upperWick = thirdCandle.high;
+      const lowerWick = thirdCandle.low;
+      
+      // Get the 4th (most recent) candle for breakout analysis
+      const fourthCandle = candleData[3];
+      const currentPrice = fourthCandle.close;
+      
+      let trend = "NEUTRAL";
+      let strength = 0;
+      let entrySignal = false;
+      let stopLoss = 0;
+      let entryPoint = 0;
+
+      // Check for breakout above upper wick (bullish signal)
+      if (currentPrice > upperWick) {
+        trend = "BULLISH";
+        entrySignal = true;
+        entryPoint = upperWick; // Entry at breakout point
+        stopLoss = lowerWick; // Stop loss at opposite wick
+        
+        // Calculate strength based on how far above the wick we broke
+        const breakoutDistance = ((currentPrice - upperWick) / upperWick) * 100;
+        strength = Math.min(100, Math.max(60, breakoutDistance * 50));
+      }
+      // Check for breakout below lower wick (bearish signal)
+      else if (currentPrice < lowerWick) {
+        trend = "BEARISH";
+        entrySignal = true;
+        entryPoint = lowerWick; // Entry at breakout point
+        stopLoss = upperWick; // Stop loss at opposite wick
+        
+        // Calculate strength based on how far below the wick we broke
+        const breakoutDistance = ((lowerWick - currentPrice) / lowerWick) * 100;
+        strength = Math.min(100, Math.max(60, breakoutDistance * 50));
+      }
+      // No breakout - price within wicks
+      else {
+        const wickRange = upperWick - lowerWick;
+        const pricePosition = (currentPrice - lowerWick) / wickRange;
+        
+        // Closer to upper wick suggests potential bullish bias
+        if (pricePosition > 0.7) {
+          trend = "BULLISH";
+          strength = 40;
+        }
+        // Closer to lower wick suggests potential bearish bias
+        else if (pricePosition < 0.3) {
+          trend = "BEARISH";
+          strength = 40;
+        }
+        else {
+          trend = "NEUTRAL";
+          strength = 20;
+        }
+      }
+
+      // Calculate percentage changes for display
       const changes = candleData.map((candle, index) => {
         if (index === 0) return 0;
         const prevClose = candleData[index - 1].close;
         return ((candle.close - prevClose) / prevClose) * 100;
       });
 
-      // Determine trend strength and direction
-      const totalChange = changes.reduce((sum, change) => sum + change, 0);
-      const positiveCandles = changes.filter(change => change > 0).length;
-      const negativeCandles = changes.filter(change => change < 0).length;
-
-      let trend = "NEUTRAL";
-      let strength = 0;
-
-      if (positiveCandles >= 3) {
-        trend = "BULLISH";
-        strength = Math.min(100, Math.abs(totalChange) * 20);
-      } else if (negativeCandles >= 3) {
-        trend = "BEARISH";
-        strength = Math.min(100, Math.abs(totalChange) * 20);
-      } else {
-        strength = Math.abs(totalChange) * 10;
-      }
-
       return {
         candle1: changes[1] || 0,
         candle2: changes[2] || 0,
         candle3: changes[3] || 0,
-        candle4: changes[0] || 0, // Most recent candle
+        candle4: ((currentPrice - thirdCandle.close) / thirdCandle.close) * 100, // Change from 3rd candle
         trend,
         strength: Math.round(strength),
+        // Additional analysis data
+        upperLimit: upperWick,
+        lowerLimit: lowerWick,
+        entryPoint,
+        stopLoss,
+        entrySignal,
+        currentPrice,
       };
     } catch (error) {
       console.error("Error analyzing breakout:", error);

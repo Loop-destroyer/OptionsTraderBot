@@ -119,6 +119,13 @@ The database uses PostgreSQL with Drizzle ORM for type-safe database operations.
   - Implemented realistic NSE data modeling for 6-month historical periods
   - Built comprehensive backtest metrics including Sharpe ratio, win rate, drawdown analysis
 
+- **June 22, 2025**: Enhanced signal analysis with wick-based breakout strategy
+  - Implemented 3rd candle wick limits for entry/exit signals
+  - Breakout above upper wick triggers bullish signal with lower wick stop loss
+  - Breakout below lower wick triggers bearish signal with upper wick stop loss
+  - Enhanced UI to show wick limits, entry points, and stop loss levels
+  - Updated backtesting engine to use new wick-based analysis method
+
 ## Changelog
 
 - June 22, 2025: Initial setup

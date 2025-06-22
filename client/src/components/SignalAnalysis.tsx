@@ -106,40 +106,96 @@ export function SignalAnalysis() {
             </div>
             
             {signal?.candleAnalysis && (
-              <div className="grid grid-cols-4 gap-2 text-center text-xs">
-                <div className={`p-2 rounded ${
-                  (signal.candleAnalysis as any).candle1 > 0 ? "bg-profit-green/20" : "bg-loss-red/20"
-                }`}>
-                  <p className="text-secondary">Candle 1</p>
-                  <p className="font-semibold text-primary">
-                    {formatPercentage((signal.candleAnalysis as any).candle1)}
-                  </p>
+              <>
+                <div className="grid grid-cols-4 gap-2 text-center text-xs mb-3">
+                  <div className={`p-2 rounded ${
+                    (signal.candleAnalysis as any).candle1 > 0 ? "bg-profit-green/20" : "bg-loss-red/20"
+                  }`}>
+                    <p className="text-secondary">Candle 1</p>
+                    <p className="font-semibold text-primary">
+                      {formatPercentage((signal.candleAnalysis as any).candle1)}
+                    </p>
+                  </div>
+                  <div className={`p-2 rounded ${
+                    (signal.candleAnalysis as any).candle2 > 0 ? "bg-profit-green/30" : "bg-loss-red/30"
+                  }`}>
+                    <p className="text-secondary">Candle 2</p>
+                    <p className="font-semibold text-primary">
+                      {formatPercentage((signal.candleAnalysis as any).candle2)}
+                    </p>
+                  </div>
+                  <div className={`p-3 rounded border-2 ${
+                    (signal.candleAnalysis as any).candle3 > 0 ? "bg-profit-green/40 border-profit-green/60" : "bg-loss-red/40 border-loss-red/60"
+                  }`}>
+                    <p className="text-secondary font-semibold">Candle 3 (Limits)</p>
+                    <p className="font-semibold text-primary">
+                      {formatPercentage((signal.candleAnalysis as any).candle3)}
+                    </p>
+                  </div>
+                  <div className={`p-2 rounded ${
+                    (signal.candleAnalysis as any).candle4 > 0 ? "bg-profit-green/50" : "bg-loss-red/50"
+                  }`}>
+                    <p className="text-secondary">Candle 4 (Current)</p>
+                    <p className="font-semibold text-primary">
+                      {formatPercentage((signal.candleAnalysis as any).candle4)}
+                    </p>
+                  </div>
                 </div>
-                <div className={`p-2 rounded ${
-                  (signal.candleAnalysis as any).candle2 > 0 ? "bg-profit-green/30" : "bg-loss-red/30"
-                }`}>
-                  <p className="text-secondary">Candle 2</p>
-                  <p className="font-semibold text-primary">
-                    {formatPercentage((signal.candleAnalysis as any).candle2)}
-                  </p>
-                </div>
-                <div className={`p-2 rounded ${
-                  (signal.candleAnalysis as any).candle3 > 0 ? "bg-profit-green/40" : "bg-loss-red/40"
-                }`}>
-                  <p className="text-secondary">Candle 3</p>
-                  <p className="font-semibold text-primary">
-                    {formatPercentage((signal.candleAnalysis as any).candle3)}
-                  </p>
-                </div>
-                <div className={`p-2 rounded ${
-                  (signal.candleAnalysis as any).candle4 > 0 ? "bg-profit-green/50" : "bg-loss-red/50"
-                }`}>
-                  <p className="text-secondary">Candle 4</p>
-                  <p className="font-semibold text-primary">
-                    {formatPercentage((signal.candleAnalysis as any).candle4)}
-                  </p>
-                </div>
-              </div>
+                
+                {/* Breakout Analysis Details */}
+                {(signal.candleAnalysis as any).upperLimit && (
+                  <div className="bg-trading-border/20 rounded p-3 space-y-2">
+                    <div className="grid grid-cols-2 gap-4 text-xs">
+                      <div>
+                        <p className="text-secondary">Upper Limit (High Wick)</p>
+                        <p className="font-semibold text-warning-amber">
+                          {(signal.candleAnalysis as any).upperLimit?.toFixed(2)}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-secondary">Lower Limit (Low Wick)</p>
+                        <p className="font-semibold text-warning-amber">
+                          {(signal.candleAnalysis as any).lowerLimit?.toFixed(2)}
+                        </p>
+                      </div>
+                    </div>
+                    
+                    {(signal.candleAnalysis as any).entrySignal && (
+                      <div className="grid grid-cols-2 gap-4 text-xs pt-2 border-t trading-border">
+                        <div>
+                          <p className="text-secondary">Entry Point</p>
+                          <p className="font-semibold text-profit-green">
+                            {(signal.candleAnalysis as any).entryPoint?.toFixed(2)}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-secondary">Stop Loss</p>
+                          <p className="font-semibold text-loss-red">
+                            {(signal.candleAnalysis as any).stopLoss?.toFixed(2)}
+                          </p>
+                        </div>
+                      </div>
+                    )}
+                    
+                    <div className="text-center pt-2">
+                      <p className="text-xs text-secondary">
+                        Current Price: <span className="text-primary font-semibold">
+                          {(signal.candleAnalysis as any).currentPrice?.toFixed(2)}
+                        </span>
+                      </p>
+                      {(signal.candleAnalysis as any).entrySignal ? (
+                        <p className="text-xs text-profit-green font-semibold mt-1">
+                          ✓ BREAKOUT DETECTED - Entry Signal Active
+                        </p>
+                      ) : (
+                        <p className="text-xs text-secondary mt-1">
+                          Waiting for breakout beyond wick limits
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </>
             )}
             
             {!signal && (

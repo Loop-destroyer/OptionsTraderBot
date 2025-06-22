@@ -145,6 +145,12 @@ export interface BreakoutAnalysis {
   candle4: number;
   trend: string;
   strength: number;
+  upperLimit?: number;
+  lowerLimit?: number;
+  entryPoint?: number;
+  stopLoss?: number;
+  entrySignal?: boolean;
+  currentPrice?: number;
 }
 
 export interface TrailingStopLoss {

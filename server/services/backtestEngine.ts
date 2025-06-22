@@ -90,32 +90,50 @@ export class BacktestEngine {
       return { trend: "NEUTRAL", strength: 0, confidence: 50 };
     }
 
-    const changes = [];
-    for (let i = 1; i < dataSlice.length; i++) {
-      const prevClose = parseFloat(dataSlice[i - 1].close);
-      const currentClose = parseFloat(dataSlice[i].close);
-      changes.push(((currentClose - prevClose) / prevClose) * 100);
-    }
-
-    const totalChange = changes.reduce((sum, change) => sum + change, 0);
-    const positiveCandles = changes.filter(change => change > 0).length;
-    const negativeCandles = changes.filter(change => change < 0).length;
-
+    // Apply the new wick-based breakout logic
+    const thirdCandle = dataSlice[2]; // 3rd candle defines limits
+    const fourthCandle = dataSlice[3]; // 4th candle for breakout check
+    
+    const upperWick = parseFloat(thirdCandle.high);
+    const lowerWick = parseFloat(thirdCandle.low);
+    const currentPrice = parseFloat(fourthCandle.close);
+    
     let trend = "NEUTRAL";
     let strength = 0;
     let confidence = 50;
 
-    if (positiveCandles >= 3) {
+    // Check for breakout above upper wick (bullish)
+    if (currentPrice > upperWick) {
       trend = "BULLISH";
-      strength = Math.min(100, Math.abs(totalChange) * 20);
-      confidence = Math.min(95, 60 + strength / 3);
-    } else if (negativeCandles >= 3) {
+      const breakoutDistance = ((currentPrice - upperWick) / upperWick) * 100;
+      strength = Math.min(100, Math.max(60, breakoutDistance * 50));
+      confidence = Math.min(95, 70 + strength / 4);
+    }
+    // Check for breakout below lower wick (bearish)
+    else if (currentPrice < lowerWick) {
       trend = "BEARISH";
-      strength = Math.min(100, Math.abs(totalChange) * 20);
-      confidence = Math.min(95, 60 + strength / 3);
-    } else {
-      strength = Math.abs(totalChange) * 10;
-      confidence = 40 + strength / 2;
+      const breakoutDistance = ((lowerWick - currentPrice) / lowerWick) * 100;
+      strength = Math.min(100, Math.max(60, breakoutDistance * 50));
+      confidence = Math.min(95, 70 + strength / 4);
+    }
+    // No breakout - price within wicks
+    else {
+      const wickRange = upperWick - lowerWick;
+      const pricePosition = (currentPrice - lowerWick) / wickRange;
+      
+      if (pricePosition > 0.7) {
+        trend = "BULLISH";
+        strength = 40;
+        confidence = 55;
+      } else if (pricePosition < 0.3) {
+        trend = "BEARISH";
+        strength = 40;
+        confidence = 55;
+      } else {
+        trend = "NEUTRAL";
+        strength = 20;
+        confidence = 45;
+      }
     }
 
     return { trend, strength: Math.round(strength), confidence: Math.round(confidence) };
