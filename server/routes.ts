@@ -44,22 +44,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/market-data/:underlying", async (req, res) => {
     try {
       const { underlying } = req.params;
-      let marketData = await storage.getMarketData(underlying);
       
-      if (!marketData) {
-        // Fetch fresh data from NSE API
-        const nseData = await nseApiService.getMarketData(underlying);
-        marketData = await storage.updateMarketData({
-          underlying: nseData.underlying,
-          spotPrice: nseData.spotPrice.toString(),
-          change: nseData.change.toString(),
-          changePercent: nseData.changePercent.toString(),
-          marketStatus: nseData.marketStatus,
-        });
-      }
+      // Always try to fetch fresh data first
+      const nseData = await nseApiService.getMarketData(underlying);
+      const marketData = await storage.updateMarketData({
+        underlying: nseData.underlying,
+        spotPrice: nseData.spotPrice.toString(),
+        change: nseData.change.toString(),
+        changePercent: nseData.changePercent.toString(),
+        marketStatus: nseData.marketStatus,
+      });
       
       res.json(marketData);
     } catch (error) {
+      console.error("Market data error:", error);
       res.status(500).json({ message: "Failed to fetch market data" });
     }
   });
@@ -69,27 +67,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { underlying, expiry } = req.params;
       
-      // Try to get cached data first
-      let optionsChain = await storage.getOptionsChain(underlying, expiry);
+      // Always fetch fresh data
+      const nseData = await nseApiService.getOptionsChain(underlying, expiry);
+      const chainData = nseData.map(item => ({
+        underlying: item.underlying,
+        expiry: item.expiry,
+        strike: item.strike,
+        peLtp: item.peLtp.toString(),
+        ceLtp: item.ceLtp.toString(),
+        peVolume: item.peVolume,
+        ceVolume: item.ceVolume,
+      }));
       
-      if (optionsChain.length === 0) {
-        // Fetch fresh data from NSE API
-        const nseData = await nseApiService.getOptionsChain(underlying, expiry);
-        const chainData = nseData.map(item => ({
-          underlying: item.underlying,
-          expiry: item.expiry,
-          strike: item.strike,
-          peLtp: item.peLtp.toString(),
-          ceLtp: item.ceLtp.toString(),
-          peVolume: item.peVolume,
-          ceVolume: item.ceVolume,
-        }));
-        
-        optionsChain = await storage.updateOptionsChain(chainData);
-      }
-      
+      const optionsChain = await storage.updateOptionsChain(chainData);
       res.json(optionsChain);
     } catch (error) {
+      console.error("Options chain error:", error);
       res.status(500).json({ message: "Failed to fetch options chain" });
     }
   });
