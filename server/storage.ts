@@ -334,7 +334,14 @@ export class DatabaseStorage implements IStorage {
   }
 
   async updateOptionsChain(data: InsertOptionsChainData[]): Promise<OptionsChainData[]> {
-    const result = await db
+    // Clear existing data and insert fresh data
+    await db.delete(optionsChain)
+      .where(and(
+        eq(optionsChain.underlying, data[0]?.underlying || "NIFTY"),
+        eq(optionsChain.expiry, data[0]?.expiry || "28 DEC 2023")
+      ));
+
+    const results = await db
       .insert(optionsChain)
       .values(data.map(item => ({
         ...item,
@@ -343,18 +350,9 @@ export class DatabaseStorage implements IStorage {
         peVolume: item.peVolume || null,
         ceVolume: item.ceVolume || null,
       })))
-      .onConflictDoUpdate({
-        target: [optionsChain.underlying, optionsChain.expiry, optionsChain.strike],
-        set: {
-          peLtp: sql`excluded.pe_ltp`,
-          ceLtp: sql`excluded.ce_ltp`,
-          peVolume: sql`excluded.pe_volume`,
-          ceVolume: sql`excluded.ce_volume`,
-          lastUpdated: sql`NOW()`,
-        },
-      })
       .returning();
-    return result;
+    
+    return results;
   }
 
   async getLatestTradingSignal(underlying: string): Promise<TradingSignal | undefined> {
@@ -405,20 +403,14 @@ export class DatabaseStorage implements IStorage {
   }
 
   async updateMarketData(data: InsertMarketData): Promise<MarketData> {
+    // Clear existing data for this underlying and insert fresh data
+    await db.delete(marketData).where(eq(marketData.underlying, data.underlying));
+    
     const [newData] = await db
       .insert(marketData)
       .values(data)
-      .onConflictDoUpdate({
-        target: [marketData.underlying],
-        set: {
-          spotPrice: sql`excluded.spot_price`,
-          change: sql`excluded.change`,
-          changePercent: sql`excluded.change_percent`,
-          marketStatus: sql`excluded.market_status`,
-          lastUpdated: sql`NOW()`,
-        },
-      })
       .returning();
+    
     return newData;
   }
 
