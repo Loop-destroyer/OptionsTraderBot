@@ -126,6 +126,13 @@ The database uses PostgreSQL with Drizzle ORM for type-safe database operations.
   - Enhanced UI to show wick limits, entry points, and stop loss levels
   - Updated backtesting engine to use new wick-based analysis method
 
+- **June 23, 2025**: Integrated MStock API for real market data
+  - Replaced mock NSE API with MStock trading API integration
+  - Added real-time options chain data fetching from MStock
+  - Implemented live market data and candlestick data from MStock API
+  - Added proper error handling and fallback mechanisms
+  - Application now ready for production deployment with live data
+
 ## Changelog
 
 - June 22, 2025: Initial setup
