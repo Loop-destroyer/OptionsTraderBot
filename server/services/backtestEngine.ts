@@ -327,11 +327,9 @@ export class BacktestEngine {
 
   async getBacktestResults(strategy?: string): Promise<any[]> {
     let query = db.select().from(backtestResults);
-    
     if (strategy) {
       query = query.where(eq(backtestResults.strategy, strategy));
     }
-    
     return await query.orderBy(sql`${backtestResults.createdAt} DESC`);
   }
 }

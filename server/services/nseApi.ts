@@ -1,3 +1,5 @@
+import { NseIndia } from 'stock-nse-india';
+
 interface NSEOptionsData {
   underlying: string;
   expiry: string;
@@ -55,6 +57,8 @@ interface MStockCandleData {
   volume: number;
 }
 
+const nseIndia = new NseIndia();
+
 export class NSEApiService {
   private baseUrl: string;
   private apiKey: string;
@@ -67,213 +71,69 @@ export class NSEApiService {
   }
 
   async getOptionsChain(underlying: string, expiry: string): Promise<NSEOptionsData[]> {
-    try {
-      // Try multiple API endpoints and formats
-      const endpoints = [
-        `${this.mstockBaseUrl}/options-chain/${underlying}/${expiry}`,
-        `${this.mstockBaseUrl}/api/options/${underlying}/${expiry}`,
-        `${this.mstockBaseUrl}/v2/options-chain/${underlying}/${expiry}`,
-      ];
-
-      for (const endpoint of endpoints) {
-        try {
-          const response = await fetch(endpoint, {
-            headers: {
-              'Authorization': `Bearer ${this.apiKey}`,
-              'Content-Type': 'application/json',
-              'User-Agent': 'IronCondor-Trading-App/1.0',
-            },
-            timeout: 5000,
-          });
-
-          if (response.ok) {
-            const data: MStockOptionData[] = await response.json();
-            return data.map(item => ({
-              underlying,
-              expiry,
-              strike: item.strikePrice,
-              peLtp: item.putLTP,
-              ceLtp: item.callLTP,
-              peVolume: item.putVolume,
-              ceVolume: item.callVolume,
-            }));
-          }
-        } catch (endpointError) {
-          console.log(`Endpoint ${endpoint} failed, trying next...`);
-          continue;
-        }
-      }
-
-      throw new Error("All MStock endpoints failed");
-
-    } catch (error) {
-      // Generate realistic options data based on current market conditions
-      const basePrice = 21542;
-      const strikes = [21000, 21200, 21400, 21500, 21600, 21800, 22000];
-      
-      return strikes.map(strike => {
-        const distanceFromSpot = Math.abs(strike - basePrice);
-        const timeValue = Math.max(5, 100 - distanceFromSpot * 0.2);
-        
-        let peLtp = 0;
-        let ceLtp = 0;
-        
-        if (strike < basePrice) {
-          // ITM Put, OTM Call
-          peLtp = (basePrice - strike) + timeValue;
-          ceLtp = timeValue;
-        } else {
-          // OTM Put, ITM Call
-          peLtp = timeValue;
-          ceLtp = (strike > basePrice) ? timeValue : (strike - basePrice) + timeValue;
-        }
-        
-        return {
-          underlying,
-          expiry,
-          strike,
-          peLtp: parseFloat((peLtp + (Math.random() - 0.5) * 10).toFixed(2)),
-          ceLtp: parseFloat((ceLtp + (Math.random() - 0.5) * 10).toFixed(2)),
-          peVolume: Math.floor(50000 + Math.random() * 200000),
-          ceVolume: Math.floor(50000 + Math.random() * 200000),
-        };
-      });
+    // Use stock-nse-india to fetch option chain
+    let optionChainData;
+    if (underlying === 'NIFTY' || underlying === 'BANKNIFTY') {
+      optionChainData = await nseIndia.getIndexOptionChain(underlying);
+    } else {
+      optionChainData = await nseIndia.getEquityOptionChain(underlying);
     }
+    // Find the expiry data
+    const expiryData = optionChainData.records.data.filter((item: any) => item.expiryDate === expiry);
+    // Map to NSEOptionsData[]
+    return expiryData.map((item: any) => ({
+      underlying,
+      expiry: item.expiryDate,
+      strike: item.strikePrice,
+      peLtp: item.PE ? item.PE.lastPrice : 0,
+      ceLtp: item.CE ? item.CE.lastPrice : 0,
+      peVolume: item.PE ? item.PE.totalTradedVolume : 0,
+      ceVolume: item.CE ? item.CE.totalTradedVolume : 0,
+    }));
   }
 
   async getMarketData(underlying: string): Promise<NSEMarketData> {
-    try {
-      // Try multiple market data endpoints
-      const symbols = [underlying, `${underlying} 50`, `${underlying}_INDEX`];
-      const endpoints = [
-        `${this.mstockBaseUrl}/market-data/quote/`,
-        `${this.mstockBaseUrl}/api/quote/`,
-        `${this.mstockBaseUrl}/v2/market-data/`,
-      ];
-
-      for (const endpoint of endpoints) {
-        for (const symbol of symbols) {
-          try {
-            const response = await fetch(`${endpoint}${encodeURIComponent(symbol)}`, {
-              headers: {
-                'Authorization': `Bearer ${this.apiKey}`,
-                'Content-Type': 'application/json',
-                'User-Agent': 'IronCondor-Trading-App/1.0',
-              },
-              timeout: 5000,
-            });
-
-            if (response.ok) {
-              const data: MStockMarketData = await response.json();
-              return {
-                underlying,
-                spotPrice: data.ltp,
-                change: data.change,
-                changePercent: data.pChange,
-                marketStatus: this.getMarketStatus(),
-              };
-            }
-          } catch (endpointError) {
-            continue;
-          }
-        }
+    let spotPrice = 0, change = 0, changePercent = 0;
+    if (underlying === 'NIFTY' || underlying === 'BANKNIFTY') {
+      const indices = await nseIndia.getEquityStockIndices(underlying);
+      const index = indices.data.find((idx: any) => idx.index === underlying);
+      if (index) {
+        spotPrice = index.lastPrice ?? index.last ?? 0;
+        change = index.change ?? 0;
+        changePercent = index.pChange ?? 0;
       }
-
-      throw new Error("All market data endpoints failed");
-
-    } catch (error) {
-      // Generate realistic market data with proper variation
-      const basePrice = 21542.35;
-      const marketHour = new Date().getHours();
-      const isMarketOpen = marketHour >= 9 && marketHour <= 15;
-      
-      // More realistic price movement based on market hours
-      const volatility = isMarketOpen ? 0.8 : 0.2;
-      const priceVariation = (Math.random() - 0.5) * volatility * 100;
-      const currentPrice = basePrice + priceVariation;
-      const change = priceVariation;
-      const changePercent = (change / basePrice) * 100;
-
-      return {
-        underlying,
-        spotPrice: parseFloat(currentPrice.toFixed(2)),
-        change: parseFloat(change.toFixed(2)),
-        changePercent: parseFloat(changePercent.toFixed(3)),
-        marketStatus: this.getMarketStatus(),
-      };
+    } else {
+      const details = await nseIndia.getEquityDetails(underlying);
+      spotPrice = details.priceInfo.lastPrice;
+      change = details.priceInfo.change;
+      changePercent = details.priceInfo.pChange;
     }
+    return {
+      underlying,
+      spotPrice,
+      change,
+      changePercent,
+      marketStatus: this.getMarketStatus(),
+    };
   }
 
   async getCandleStickData(underlying: string, interval: string = "15m", count: number = 4): Promise<CandleStickData[]> {
-    try {
-      if (!this.apiKey) {
-        throw new Error("MStock API key is required. Please set your API_KEY environment variable.");
-      }
-
-      const symbol = underlying === "NIFTY" ? "NIFTY 50" : underlying;
-      const endTime = Math.floor(Date.now() / 1000);
-      const startTime = endTime - (count * 15 * 60); // 15 minutes per candle
-      
-      const response = await fetch(
-        `${this.mstockBaseUrl}/market-data/historical/${symbol}?interval=${interval}&from=${startTime}&to=${endTime}`,
-        {
-          headers: {
-            'Authorization': `Bearer ${this.apiKey}`,
-            'Content-Type': 'application/json',
-          },
-        }
-      );
-
-      if (!response.ok) {
-        if (response.status === 401) {
-          throw new Error("Invalid MStock API key. Please check your credentials.");
-        }
-        throw new Error(`MStock API error: ${response.status}`);
-      }
-
-      const data: MStockCandleData[] = await response.json();
-      
-      // Transform MStock data to our format
-      return data.slice(-count).map(candle => ({
-        open: candle.open,
-        high: candle.high,
-        low: candle.low,
-        close: candle.close,
-        volume: candle.volume,
-        timestamp: candle.timestamp,
-      }));
-
-    } catch (error) {
-      console.error("Error fetching candlestick data from MStock:", error);
-      
-      // Fallback to realistic mock data
-      const candles: CandleStickData[] = [];
-      const basePrice = 21542.35;
-      let currentPrice = basePrice;
-
-      for (let i = count - 1; i >= 0; i--) {
-        const timestamp = new Date(Date.now() - i * 15 * 60 * 1000).toISOString();
-        const open = currentPrice;
-        const variation = (Math.random() - 0.5) * 50;
-        const close = open + variation;
-        const high = Math.max(open, close) + Math.random() * 20;
-        const low = Math.min(open, close) - Math.random() * 20;
-        const volume = Math.floor(Math.random() * 100000) + 50000;
-
-        candles.push({
-          open,
-          high,
-          low,
-          close,
-          volume,
-          timestamp,
-        });
-
-        currentPrice = close;
-      }
-
-      return candles;
+    let candles: any[] = [];
+    if (underlying === 'NIFTY' || underlying === 'BANKNIFTY') {
+      const result = await nseIndia.getIndexIntradayData(underlying);
+      candles = result.data;
+    } else {
+      const result = await nseIndia.getEquityIntradayData(underlying);
+      candles = result.data;
     }
+    return candles.slice(-count).map((candle: any) => ({
+      open: candle.open,
+      high: candle.high,
+      low: candle.low,
+      close: candle.close,
+      volume: candle.volume,
+      timestamp: candle.time,
+    }));
   }
 
   private formatExpiryForMStock(expiry: string): string {
