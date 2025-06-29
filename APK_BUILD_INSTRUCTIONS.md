@@ -11,28 +11,28 @@ This guide explains how to convert your web-based Iron Condor trading app into a
 
 ## Step 1: Install Capacitor
 
-```bash
+\`\`\`bash
 npm install @capacitor/core @capacitor/cli
 npm install @capacitor/android
-```
+\`\`\`
 
 ## Step 2: Initialize Capacitor
 
-```bash
+\`\`\`bash
 npx cap init "Iron Condor Signals" "com.tradingsignals.ironcondor"
-```
+\`\`\`
 
 ## Step 3: Add Android Platform
 
-```bash
+\`\`\`bash
 npx cap add android
-```
+\`\`\`
 
 ## Step 4: Configure Capacitor
 
 Create `capacitor.config.ts` in your project root:
 
-```typescript
+\`\`\`typescript
 import { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
@@ -56,37 +56,37 @@ const config: CapacitorConfig = {
 };
 
 export default config;
-```
+\`\`\`
 
 ## Step 5: Build Your Web App
 
-```bash
+\`\`\`bash
 npm run build
-```
+\`\`\`
 
 ## Step 6: Copy Web Assets to Native Project
 
-```bash
+\`\`\`bash
 npx cap copy android
-```
+\`\`\`
 
 ## Step 7: Configure Android Permissions
 
 Edit `android/app/src/main/AndroidManifest.xml`:
 
-```xml
+\`\`\`xml
 <uses-permission android:name="android.permission.INTERNET" />
 <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
 <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
 <uses-permission android:name="android.permission.VIBRATE" />
 <uses-permission android:name="android.permission.WAKE_LOCK" />
-```
+\`\`\`
 
 ## Step 8: Configure Network Security
 
 Create `android/app/src/main/res/xml/network_security_config.xml`:
 
-```xml
+\`\`\`xml
 <?xml version="1.0" encoding="utf-8"?>
 <network-security-config>
     <domain-config cleartextTrafficPermitted="true">
@@ -95,13 +95,13 @@ Create `android/app/src/main/res/xml/network_security_config.xml`:
         <domain includeSubdomains="true">your-api-domain.com</domain>
     </domain-config>
 </network-security-config>
-```
+\`\`\`
 
 Add to `android/app/src/main/AndroidManifest.xml` in the `<application>` tag:
 
-```xml
+\`\`\`xml
 android:networkSecurityConfig="@xml/network_security_config"
-```
+\`\`\`
 
 ## Step 9: Configure App Icon and Splash Screen
 
@@ -115,7 +115,7 @@ android:networkSecurityConfig="@xml/network_security_config"
 - Place them in `android/app/src/main/res/drawable-*` folders
 - Configure colors in `android/app/src/main/res/values/colors.xml`:
 
-```xml
+\`\`\`xml
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <color name="colorPrimary">#00C851</color>
@@ -123,13 +123,13 @@ android:networkSecurityConfig="@xml/network_security_config"
     <color name="colorAccent">#00C851</color>
     <color name="splashBackground">#1a1a1a</color>
 </resources>
-```
+\`\`\`
 
 ## Step 10: Open in Android Studio
 
-```bash
+\`\`\`bash
 npx cap open android
-```
+\`\`\`
 
 ## Step 11: Configure Build Settings
 
@@ -150,12 +150,12 @@ In Android Studio:
 
 ### Release APK (for distribution)
 1. Generate signing key:
-```bash
+\`\`\`bash
 keytool -genkey -v -keystore iron-condor-release.keystore -alias iron-condor -keyalg RSA -keysize 2048 -validity 10000
-```
+\`\`\`
 
 2. Configure signing in `android/app/build.gradle`:
-```gradle
+\`\`\`gradle
 android {
     signingConfigs {
         release {
@@ -173,41 +173,41 @@ android {
         }
     }
 }
-```
+\`\`\`
 
 3. Build release APK:
-```bash
+\`\`\`bash
 cd android
 ./gradlew assembleRelease
-```
+\`\`\`
 
 ## Step 13: Add Native Features (Optional)
 
 ### Push Notifications
-```bash
+\`\`\`bash
 npm install @capacitor/push-notifications
-```
+\`\`\`
 
 ### Local Notifications
-```bash
+\`\`\`bash
 npm install @capacitor/local-notifications
-```
+\`\`\`
 
 ### Device Info
-```bash
+\`\`\`bash
 npm install @capacitor/device
-```
+\`\`\`
 
 ### Network Status
-```bash
+\`\`\`bash
 npm install @capacitor/network
-```
+\`\`\`
 
 ## Step 14: Configure Update Script
 
 Add to `package.json`:
 
-```json
+\`\`\`json
 {
   "scripts": {
     "mobile:build": "npm run build && npx cap copy android",
@@ -215,7 +215,7 @@ Add to `package.json`:
     "mobile:sync": "npm run build && npx cap sync android"
   }
 }
-```
+\`\`\`
 
 ## Step 15: Testing on Device
 
@@ -250,7 +250,7 @@ Add to `package.json`:
 
 ### Debug Commands
 
-```bash
+\`\`\`bash
 # View device logs
 adb logcat
 
@@ -262,7 +262,7 @@ adb devices
 
 # Clear app data
 adb shell pm clear com.tradingsignals.ironcondor
-```
+\`\`\`
 
 ## Performance Optimization
 
@@ -283,11 +283,11 @@ adb shell pm clear com.tradingsignals.ironcondor
 
 When you make changes to your web app:
 
-```bash
+\`\`\`bash
 npm run build
 npx cap copy android
 npx cap sync android
-```
+\`\`\`
 
 Then rebuild in Android Studio.
 
